@@ -90,4 +90,19 @@ exports.login = async (req, res) => {
         console.error('Login error:', error);
         res.status(500).json({ message: 'Error logging in', error: error.message });
     }
+};
+
+// Logout user
+exports.logout = async (req, res) => {
+    try {
+        // In a real application, you might want to:
+        // 1. Add the token to a blacklist
+        // 2. Clear any session data
+        // 3. Clear any cookies
+
+        res.json({ message: 'Logout successful' });
+    } catch (error) {
+        console.error('Logout error:', error);
+        res.status(500).json({ message: 'Error logging out', error: error.message });
+    }
 }; 

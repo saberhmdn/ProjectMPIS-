@@ -1,0 +1,406 @@
+/* CSS Reset */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Arial', sans-serif;
+}
+
+body {
+    background-color: #f8f9fa;
+    color: #333;
+    line-height: 1.5;
+}
+
+/* Main Container */
+.teacher-container {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+/* Header */
+.teacher-header {
+    background-color: #000;
+    color: white;
+    padding: 20px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 3px solid #FFD607;
+}
+
+.teacher-header h1 {
+    font-size: 1.8rem;
+    margin-left: 20px;
+    flex-grow: 1;
+}
+
+.teacher-header nav {
+    display: flex;
+    gap: 20px;
+}
+
+.teacher-header nav a {
+    color: white;
+    text-decoration: none;
+    font-weight: bold;
+    padding: 8px 12px;
+    border-radius: 4px;
+    transition: background-color 0.3s;
+}
+
+.teacher-header nav a:hover {
+    background-color: #333;
+}
+
+.teacher-header nav a.active {
+    background-color: #FFD607;
+    color: #000;
+}
+
+.logo {
+    height: 50px;
+}
+
+/* Main Content */
+.teacher-main {
+    flex-grow: 1;
+    padding: 30px 40px;
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+/* Sections */
+.exam-creation, .questions-section {
+    background: white;
+    padding: 30px;
+    border-radius: 5px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    margin-bottom: 30px;
+}
+
+h2 {
+    font-size: 1.8rem;
+    margin-bottom: 25px;
+    color: #000;
+}
+
+.highlight {
+    color: #FFD607;
+}
+
+/* Forms */
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+    color: #555;
+}
+
+.form-group input[type="text"],
+.form-group input[type="number"],
+.form-group textarea,
+.form-group select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+}
+
+.form-group textarea {
+    resize: vertical;
+}
+
+.form-row {
+    display: flex;
+    gap: 20px;
+}
+
+.form-row .form-group {
+    flex: 1;
+}
+
+/* Generated Link */
+.generated-link {
+    display: flex;
+}
+
+.generated-link input {
+    flex-grow: 1;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.copy-btn {
+    background-color: #000;
+    color: white;
+    border: none;
+    padding: 0 15px;
+    border-top-right-radius: 4px;
+    border-bottom-right-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.copy-btn:hover {
+    background-color: #333;
+}
+
+/* Question Type Selector */
+.question-type-selector {
+    display: flex;
+    margin-bottom: 20px;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.question-type-btn {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    background-color: #f0f0f0;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.3s;
+}
+
+.question-type-btn.active {
+    background-color: #000;
+    color: white;
+}
+
+/* Media Upload */
+.media-upload {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.media-btn {
+    background-color: #f0f0f0;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: background-color 0.3s;
+}
+
+.media-btn:hover {
+    background-color: #ddd;
+}
+
+/* QCM Options */
+.qcm-options {
+    margin-bottom: 10px;
+}
+
+.qcm-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.qcm-option input[type="text"] {
+    flex-grow: 1;
+}
+
+.remove-option-btn {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+    color: #ff4444;
+    padding: 0 5px;
+}
+
+.add-option-btn {
+    background-color: #f0f0f0;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.add-option-btn:hover {
+    background-color: #ddd;
+}
+
+/* Question Actions */
+.question-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.cancel-btn, .save-btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.3s;
+}
+
+.cancel-btn {
+    background-color: #f0f0f0;
+}
+
+.cancel-btn:hover {
+    background-color: #ddd;
+}
+
+.save-btn {
+    background-color: #000;
+    color: white;
+}
+
+.save-btn:hover {
+    background-color: #333;
+}
+
+/* Questions List */
+.questions-list {
+    margin-top: 40px;
+}
+
+.questions-list h3 {
+    font-size: 1.3rem;
+    margin-bottom: 15px;
+    color: #000;
+}
+
+.question-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 15px;
+    border: 1px solid #eee;
+    border-radius: 4px;
+    margin-bottom: 10px;
+    background-color: #fafafa;
+}
+
+.question-info {
+    flex-grow: 1;
+}
+
+.question-type {
+    display: inline-block;
+    background-color: #000;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    margin-bottom: 5px;
+}
+
+.question-meta {
+    display: flex;
+    gap: 15px;
+    margin-top: 5px;
+    font-size: 0.9rem;
+    color: #666;
+}
+
+.edit-btn, .delete-btn {
+    padding: 5px 10px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    margin-left: 5px;
+}
+
+.edit-btn {
+    background-color: #FFD607;
+    color: #000;
+}
+
+.delete-btn {
+    background-color: #ff4444;
+    color: white;
+}
+
+/* Exam Actions */
+.exam-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 15px;
+    margin-top: 30px;
+}
+
+.preview-btn, .publish-btn {
+    padding: 12px 25px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.3s;
+}
+
+.preview-btn {
+    background-color: #f0f0f0;
+}
+
+.preview-btn:hover {
+    background-color: #ddd;
+}
+
+.publish-btn {
+    background-color: #000;
+    color: white;
+}
+
+.publish-btn:hover {
+    background-color: #333;
+}
+
+/* Hidden Class */
+.hidden {
+    display: none;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .teacher-header {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 15px;
+    }
+    
+    .teacher-header nav {
+        margin-top: 15px;
+        width: 100%;
+        justify-content: space-between;
+    }
+    
+    .teacher-main {
+        padding: 15px;
+    }
+    
+    .form-row {
+        flex-direction: column;
+        gap: 0;
+    }
+    
+    .question-item {
+        flex-direction: column;
+    }
+    
+    .question-actions {
+        margin-top: 10px;
+        justify-content: flex-end;
+    }
+}

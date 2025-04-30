@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sign Up</title>
     <link rel="stylesheet" href="signup.css">
 </head>
+
 <body>
     <!-- Left Side - Welcome Content -->
     <div class="welcome-side">
@@ -21,35 +23,40 @@
 
     <!-- Right Side - Sign Up Form -->
     <div class="signup-side">
-        <form class="auth-form" action="#" method="POST">
+        <form id="signupForm" class="auth-form" action="#" method="POST">
             <h2 class="form-title">Create Account</h2>
-            
+
             <div class="user-type">
                 <div class="user-type-option active" onclick="selectUserType(this, 'student')">Student</div>
                 <div class="user-type-option" onclick="selectUserType(this, 'teacher')">Teacher</div>
             </div>
             <input type="hidden" id="userType" name="userType" value="student">
-            
+
             <div class="form-group">
                 <label for="email">Email*</label>
                 <input type="email" id="email" name="email" required>
             </div>
-            
+
             <div class="form-group">
                 <label for="firstName">First Name*</label>
                 <input type="text" id="firstName" name="firstName" required>
             </div>
-            
+
             <div class="form-group">
                 <label for="lastName">Last Name*</label>
                 <input type="text" id="lastName" name="lastName" required>
             </div>
-            
+
+            <div class="form-group">
+                <label for="password">Password*</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+
             <div class="form-group">
                 <label for="birthDate">Date of Birth*</label>
                 <input type="date" id="birthDate" name="birthDate" required>
             </div>
-            
+
             <div class="form-group">
                 <label for="gender">Gender*</label>
                 <select id="gender" name="gender" required>
@@ -59,38 +66,40 @@
                     <option value="other">Other</option>
                 </select>
             </div>
-            
+
             <div class="form-group">
                 <label for="institution">Institution*</label>
                 <input type="text" id="institution" name="institution" required>
             </div>
-            
+
             <div class="form-group">
                 <label for="field">Field of Study*</label>
                 <input type="text" id="field" name="field" required>
             </div>
-            
+
             <button type="submit" class="submit-btn">SIGN UP</button>
-            
+
             <div class="form-footer">
-                Already have an account? <a href="index.html" class="login-link">SIGN IN</a>
+                Already have an account? <a href="login.html" class="login-link">SIGN IN</a>
             </div>
         </form>
     </div>
 
+    <script src="auth.js"></script>
     <script>
         function selectUserType(element, type) {
             // Remove active class from all options
             document.querySelectorAll('.user-type-option').forEach(opt => {
                 opt.classList.remove('active');
             });
-            
+
             // Add active class to clicked option
             element.classList.add('active');
-            
+
             // Update hidden input value
             document.getElementById('userType').value = type;
         }
     </script>
 </body>
+
 </html>

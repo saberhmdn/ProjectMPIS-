@@ -1,3 +1,11 @@
+import { fetchStudentExam } from '../../assets/js/api.js';
+
+// Vérification de session
+if (!localStorage.getItem('authToken')) {
+    window.location.href = '../auth/login.html';
+}
+
+// [Le reste du code existant...]
 document.addEventListener('DOMContentLoaded', function() {
     // Éléments du DOM
     const loginStep = document.getElementById('login-step');

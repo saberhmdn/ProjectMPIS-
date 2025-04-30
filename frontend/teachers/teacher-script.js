@@ -1,3 +1,11 @@
+import { fetchTeacherExams } from '../../assets/js/api.js';
+
+// Vérification de session
+if (!localStorage.getItem('authToken')) {
+    window.location.href = '../auth/login.html';
+}
+
+// [Le reste du code existant...]
 document.addEventListener('DOMContentLoaded', function() {
     // Toggle between question types
     const typeButtons = document.querySelectorAll('.question-type-btn');

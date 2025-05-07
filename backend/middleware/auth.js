@@ -9,9 +9,24 @@ module.exports = (req, res, next) => {
         }
 
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        
+        // Set user info based on what's in the token
         req.user = decoded;
+        
+        // For backward compatibility with existing routes
+        if (decoded.userId) {
+            req.userId = decoded.userId;
+        }
+        if (decoded.studentId) {
+            req.studentId = decoded.studentId;
+        }
+        if (decoded.teacherId) {
+            req.teacherId = decoded.teacherId;
+        }
+        
         next();
     } catch (error) {
+        console.error('Auth middleware error:', error);
         res.status(401).json({ message: 'Token is not valid' });
     }
 }; 

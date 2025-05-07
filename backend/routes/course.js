@@ -6,21 +6,44 @@ const auth = require('../middleware/auth');
 // Create a new course (protected route - teachers only)
 router.post('/', auth, async (req, res) => {
     try {
-        const { title, description, code, credits, department, prerequisites } = req.body;
+        const { courseName, courseCode, description, department, level } = req.body;
+
+        // Validate required fields
+        if (!courseName || !courseCode || !description || !department || !level) {
+            return res.status(400).json({ 
+                message: 'Missing required fields',
+                missingFields: {
+                    courseName: !courseName,
+                    courseCode: !courseCode,
+                    description: !description,
+                    department: !department,
+                    level: !level
+                }
+            });
+        }
+
+        // Check if course code already exists
+        const existingCourse = await Course.findOne({ courseCode });
+        if (existingCourse) {
+            return res.status(400).json({ message: 'Course code already exists' });
+        }
 
         const course = new Course({
-            title,
+            courseName,
+            courseCode,
             description,
-            code,
-            credits,
             department,
-            prerequisites,
-            teacher: req.teacherId
+            level,
+            teacher: req.teacherId || req.user.userId, // Support both auth middleware versions
+            students: [],
+            exams: [],
+            isActive: true
         });
 
         await course.save();
         res.status(201).json(course);
     } catch (error) {
+        console.error('Course creation error:', error);
         res.status(500).json({ message: 'Error creating course', error: error.message });
     }
 });

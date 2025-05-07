@@ -6,10 +6,14 @@ const jwt = require('jsonwebtoken');
 exports.register = async (req, res) => {
     try {
         const { firstName, lastName, email, password, role } = req.body;
+        
+        // Add detailed logging
+        console.log('Registration attempt:', { firstName, lastName, email, role });
 
         // Check if user already exists
         const existingUser = await User.findOne({ email });
         if (existingUser) {
+            console.log('Registration failed: Email already registered');
             return res.status(400).json({ message: 'Email already registered' });
         }
 
@@ -26,6 +30,7 @@ exports.register = async (req, res) => {
         });
 
         await user.save();
+        console.log('User registered successfully:', user._id);
 
         // Generate JWT token
         const token = jwt.sign(
@@ -46,8 +51,12 @@ exports.register = async (req, res) => {
             }
         });
     } catch (error) {
-        console.error('Registration error:', error);
-        res.status(500).json({ message: 'Error registering user', error: error.message });
+        console.error('Registration error details:', error);
+        res.status(500).json({ 
+            message: 'Error registering user', 
+            error: error.message,
+            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        });
     }
 };
 
@@ -55,24 +64,34 @@ exports.register = async (req, res) => {
 exports.login = async (req, res) => {
     try {
         const { email, password } = req.body;
+        console.log('Login attempt:', { email });
 
-        // Find user by email
+        // Validate required fields
+        if (!email || !password) {
+            return res.status(400).json({ message: 'Email and password are required' });
+        }
+
+        // Find user
         const user = await User.findOne({ email });
         if (!user) {
-            return res.status(401).json({ message: 'Invalid email or password' });
+            console.log('Login failed: User not found');
+            return res.status(401).json({ message: 'Invalid credentials' });
         }
 
         // Check password
-        const isPasswordValid = await bcrypt.compare(password, user.password);
-        if (!isPasswordValid) {
-            return res.status(401).json({ message: 'Invalid email or password' });
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            console.log('Login failed: Password mismatch');
+            return res.status(401).json({ message: 'Invalid credentials' });
         }
+
+        console.log('Login successful for user:', user._id);
 
         // Generate JWT token
         const token = jwt.sign(
             { userId: user._id, role: user.role },
             process.env.JWT_SECRET,
-            { expiresIn: '24h' }
+            { expiresIn: '1d' }
         );
 
         res.json({
@@ -80,10 +99,10 @@ exports.login = async (req, res) => {
             token,
             user: {
                 id: user._id,
-                firstName: user.firstName,
-                lastName: user.lastName,
                 email: user.email,
-                role: user.role
+                role: user.role,
+                firstName: user.firstName,
+                lastName: user.lastName
             }
         });
     } catch (error) {

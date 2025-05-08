@@ -1,207 +1,49 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import axios from 'axios';
-import config from '../config';
-import '../styles/Dashboard.css';
+import CourseService from '../services/CourseService';
+import ExamService from '../services/ExamService';
 
 const TeacherDashboard = () => {
+    const navigate = useNavigate();
     const { user, logout } = useAuth();
+    const [activeTab, setActiveTab] = useState('courses');
     const [courses, setCourses] = useState([]);
     const [exams, setExams] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    const [activeTab, setActiveTab] = useState('courses');
-    const [showExamForm, setShowExamForm] = useState(false);
-    const navigate = useNavigate();
-    
-    const [newCourse, setNewCourse] = useState({
-        courseName: '',
-        courseCode: '',
-        description: '',
-        department: '',
-        level: 1
-    });
-    
-    const [newExam, setNewExam] = useState({
-        title: '',
-        description: '',
-        courseId: '',
-        examType: 'mcq', // 'mcq' or 'written'
-        duration: 60,
-        startTime: '',
-        endTime: '',
-        questions: []
-    });
-    
-    const [currentQuestion, setCurrentQuestion] = useState({
-        questionText: '',
-        options: ['', '', '', ''],
-        correctAnswer: '',
-        points: 1
-    });
+    const [serverStatus, setServerStatus] = useState('checking');
 
     useEffect(() => {
         const fetchData = async () => {
             try {
                 setLoading(true);
-                const token = localStorage.getItem('token');
+                setError('');
                 
-                // Fetch courses
-                const coursesResponse = await axios.get(`${config.API_BASE_URL}/api/courses/my-courses`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                setCourses(coursesResponse.data);
+                if (activeTab === 'courses') {
+                    // Fetch courses
+                    const coursesData = await CourseService.getTeacherCourses();
+                    setCourses(coursesData);
+                } else if (activeTab === 'exams') {
+                    // Fetch exams
+                    const examsData = await ExamService.getTeacherExams();
+                    setExams(examsData);
+                }
                 
-                // Fetch exams
-                const examsResponse = await axios.get(`${config.API_BASE_URL}/api/exams/teacher`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                setExams(examsResponse.data);
+                // If we get here, the server is connected
+                setServerStatus('connected');
                 
             } catch (err) {
-                setError('Failed to fetch data');
                 console.error('Error fetching data:', err);
+                setError('Failed to fetch data: ' + (err.message || 'Unknown error'));
+                setServerStatus('disconnected');
             } finally {
                 setLoading(false);
             }
         };
 
         fetchData();
-    }, []);
-
-    const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setNewCourse(prev => ({
-            ...prev,
-            [name]: value
-        }));
-    };
-    
-    const handleExamInputChange = (e) => {
-        const { name, value } = e.target;
-        setNewExam(prev => ({
-            ...prev,
-            [name]: value
-        }));
-    };
-    
-    const handleQuestionChange = (e) => {
-        const { name, value } = e.target;
-        setCurrentQuestion(prev => ({
-            ...prev,
-            [name]: value
-        }));
-    };
-    
-    const handleOptionChange = (index, value) => {
-        const updatedOptions = [...currentQuestion.options];
-        updatedOptions[index] = value;
-        setCurrentQuestion(prev => ({
-            ...prev,
-            options: updatedOptions
-        }));
-    };
-
-    const handleCreateCourse = async (e) => {
-        e.preventDefault();
-        try {
-            const token = localStorage.getItem('token');
-            const response = await axios.post(`${config.API_BASE_URL}/api/courses`, newCourse, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            setCourses(prev => [...prev, response.data]);
-            setNewCourse({
-                courseName: '',
-                courseCode: '',
-                description: '',
-                department: '',
-                level: 1
-            });
-        } catch (err) {
-            setError('Failed to create course');
-            console.error('Error creating course:', err);
-        }
-    };
-    
-    const addQuestion = () => {
-        if (!currentQuestion.questionText) {
-            alert('Question text is required');
-            return;
-        }
-        
-        if (newExam.examType === 'mcq') {
-            // Validate MCQ question
-            if (currentQuestion.options.some(opt => !opt)) {
-                alert('All options must be filled');
-                return;
-            }
-            if (!currentQuestion.correctAnswer) {
-                alert('Please select the correct answer');
-                return;
-            }
-        }
-        
-        setNewExam(prev => ({
-            ...prev,
-            questions: [...prev.questions, {...currentQuestion}]
-        }));
-        
-        // Reset current question
-        setCurrentQuestion({
-            questionText: '',
-            options: ['', '', '', ''],
-            correctAnswer: '',
-            points: 1
-        });
-    };
-    
-    const removeQuestion = (index) => {
-        setNewExam(prev => ({
-            ...prev,
-            questions: prev.questions.filter((_, i) => i !== index)
-        }));
-    };
-    
-    const handleCreateExam = async (e) => {
-        e.preventDefault();
-        
-        if (newExam.questions.length === 0) {
-            alert('Please add at least one question');
-            return;
-        }
-        
-        try {
-            const token = localStorage.getItem('token');
-            const examData = {
-                ...newExam,
-                startTime: new Date(newExam.startTime).toISOString(),
-                endTime: new Date(newExam.endTime).toISOString()
-            };
-            
-            const response = await axios.post(`${config.API_BASE_URL}/api/exams`, examData, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            
-            setExams(prev => [...prev, response.data.exam]);
-            setShowExamForm(false);
-            setNewExam({
-                title: '',
-                description: '',
-                courseId: '',
-                examType: 'mcq',
-                duration: 60,
-                startTime: '',
-                endTime: '',
-                questions: []
-            });
-            
-            alert('Exam created successfully!');
-        } catch (err) {
-            setError('Failed to create exam');
-            console.error('Error creating exam:', err);
-        }
-    };
+    }, [activeTab]);
 
     const handleLogout = async () => {
         try {
@@ -212,449 +54,249 @@ const TeacherDashboard = () => {
         }
     };
 
-    if (loading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center">
-                <div className="text-xl">Loading...</div>
-            </div>
-        );
-    }
-
     return (
-        <div className="min-h-screen bg-gray-100">
-            <nav className="bg-white shadow-sm">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between h-16">
-                        <div className="flex items-center">
-                            <h1 className="text-xl font-semibold">Teacher Dashboard</h1>
-                        </div>
-                        <div className="flex items-center">
-                            <span className="mr-4">Welcome, {user?.firstName} {user?.lastName}</span>
-                            <button
-                                onClick={handleLogout}
-                                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md"
-                            >
-                                Logout
-                            </button>
-                        </div>
+        <div className="min-h-screen bg-gray-50">
+            {/* Header */}
+            <header className="bg-white shadow">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+                    <h1 className="text-2xl font-bold text-gray-800">Teacher Dashboard</h1>
+                    <div className="flex items-center space-x-4">
+                        <span className="text-gray-600">
+                            Welcome, {user?.firstName} {user?.lastName}
+                        </span>
+                        <button
+                            onClick={handleLogout}
+                            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                        >
+                            Logout
+                        </button>
                     </div>
                 </div>
-            </nav>
+            </header>
 
-            <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-                {error && (
-                    <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-                        {error}
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                {/* Server Status Warning */}
+                {serverStatus === 'disconnected' && (
+                    <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-md">
+                        <div className="flex">
+                            <div className="flex-shrink-0">
+                                <svg className="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                                </svg>
+                            </div>
+                            <div className="ml-3">
+                                <p className="text-sm text-red-700">
+                                    We're having trouble connecting to the server. Please check your connection and try again.
+                                </p>
+                            </div>
+                        </div>
                     </div>
                 )}
-                
-                <div className="mb-6">
-                    <div className="flex border-b">
+
+                {/* Error Message */}
+                {error && (
+                    <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-md">
+                        <div className="flex">
+                            <div className="flex-shrink-0">
+                                <svg className="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                                </svg>
+                            </div>
+                            <div className="ml-3">
+                                <p className="text-sm text-red-700">{error}</p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Tabs */}
+                <div className="border-b border-gray-200 mb-6">
+                    <nav className="-mb-px flex space-x-8">
                         <button
-                            className={`py-2 px-4 ${activeTab === 'courses' ? 'border-b-2 border-blue-500 font-medium' : ''}`}
+                            className={`${
+                                activeTab === 'courses'
+                                    ? 'border-indigo-500 text-indigo-600'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                            } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
                             onClick={() => setActiveTab('courses')}
                         >
                             Courses
                         </button>
                         <button
-                            className={`py-2 px-4 ${activeTab === 'exams' ? 'border-b-2 border-blue-500 font-medium' : ''}`}
+                            className={`${
+                                activeTab === 'exams'
+                                    ? 'border-indigo-500 text-indigo-600'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                            } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
                             onClick={() => setActiveTab('exams')}
                         >
                             Exams
                         </button>
-                    </div>
+                    </nav>
                 </div>
-                
-                {activeTab === 'courses' && (
+
+                {/* Content */}
+                {loading ? (
+                    <div className="flex justify-center items-center py-12">
+                        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+                    </div>
+                ) : (
                     <>
-                        <div className="bg-white shadow rounded-lg p-6 mb-6">
-                            <h2 className="text-lg font-medium mb-4">Create New Course</h2>
-                            <form onSubmit={handleCreateCourse}>
-                                <div className="grid grid-cols-1 gap-6">
-                                    <div>
-                                        <label htmlFor="courseName" className="block text-sm font-medium text-gray-700">
-                                            Course Name
-                                        </label>
-                                        <input
-                                            type="text"
-                                            name="courseName"
-                                            id="courseName"
-                                            required
-                                            value={newCourse.courseName}
-                                            onChange={handleInputChange}
-                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                                        />
+                        {/* Courses Tab */}
+                        {activeTab === 'courses' && (
+                            <div>
+                                <div className="flex justify-between items-center mb-6">
+                                    <h2 className="text-xl font-semibold text-gray-800">Your Courses</h2>
+                                    <button
+                                        onClick={() => navigate('/create-course')}
+                                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                                    >
+                                        <svg className="mr-2 -ml-1 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
+                                        </svg>
+                                        Create New Course
+                                    </button>
+                                </div>
+
+                                {courses.length === 0 ? (
+                                    <div className="bg-white shadow rounded-lg p-8 text-center">
+                                        <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                                        </svg>
+                                        <h3 className="mt-2 text-sm font-medium text-gray-900">No courses found</h3>
+                                        <p className="mt-1 text-sm text-gray-500">Get started by creating a new course.</p>
+                                        <div className="mt-6">
+                                            <button
+                                                onClick={() => navigate('/create-course')}
+                                                className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                                            >
+                                                <svg className="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                                    <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
+                                                </svg>
+                                                Create Course
+                                            </button>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <label htmlFor="courseCode" className="block text-sm font-medium text-gray-700">
-                                            Course Code
-                                        </label>
-                                        <input
-                                            type="text"
-                                            name="courseCode"
-                                            id="courseCode"
-                                            required
-                                            value={newCourse.courseCode}
-                                            onChange={handleInputChange}
-                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                                        />
+                                ) : (
+                                    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                                        {courses.map(course => (
+                                            <div key={course._id} className="bg-white overflow-hidden shadow rounded-lg hover:shadow-md transition-shadow duration-300">
+                                                <div className="px-4 py-5 sm:p-6">
+                                                    <h3 className="text-lg leading-6 font-medium text-gray-900 truncate">
+                                                        {course.courseName}
+                                                    </h3>
+                                                    <div className="mt-2 flex flex-wrap gap-2">
+                                                        {course.department && (
+                                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                                                {course.department}
+                                                            </span>
+                                                        )}
+                                                        {course.courseCode && (
+                                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                                {course.courseCode}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <p className="mt-3 text-sm text-gray-500 line-clamp-3">
+                                                        {course.description || 'No description available'}
+                                                    </p>
+                                                    <div className="mt-5">
+                                                        <button
+                                                            onClick={() => navigate(`/courses/${course._id}`)}
+                                                            className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                                                        >
+                                                            View Details
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
                                     </div>
-                                    <div>
-                                        <label htmlFor="department" className="block text-sm font-medium text-gray-700">
-                                            Department
-                                        </label>
-                                        <input
-                                            type="text"
-                                            name="department"
-                                            id="department"
-                                            required
-                                            value={newCourse.department}
-                                            onChange={handleInputChange}
-                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label htmlFor="level" className="block text-sm font-medium text-gray-700">
-                                            Level (1-5)
-                                        </label>
-                                        <input
-                                            type="number"
-                                            name="level"
-                                            id="level"
-                                            min="1"
-                                            max="5"
-                                            required
-                                            value={newCourse.level}
-                                            onChange={handleInputChange}
-                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label htmlFor="description" className="block text-sm font-medium text-gray-700">
-                                            Description
-                                        </label>
-                                        <textarea
-                                            name="description"
-                                            id="description"
-                                            required
-                                            value={newCourse.description}
-                                            onChange={handleInputChange}
-                                            rows={3}
-                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                                        />
-                                    </div>
-                                    <div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Exams Tab */}
+                        {activeTab === 'exams' && (
+                            <div>
+                                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                                    <h2 className="text-xl font-semibold text-gray-800">Your Exams</h2>
+                                    <div className="flex flex-col sm:flex-row gap-3">
                                         <button
-                                            type="submit"
-                                            className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                                            onClick={() => navigate('/create-exam/mcq')}
+                                            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                                         >
-                                            Create Course
+                                            <svg className="mr-2 -ml-1 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                                <path d="M7 9a2 2 0 012-2h6a2 2 0 012 2v6a2 2 0 01-2 2H9a2 2 0 01-2-2V9z" />
+                                                <path d="M5 3a2 2 0 00-2 2v6a2 2 0 002 2V5h8a2 2 0 00-2-2H5z" />
+                                            </svg>
+                                            Create MCQ Exam
+                                        </button>
+                                        <button
+                                            onClick={() => navigate('/create-exam/written')}
+                                            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+                                        >
+                                            <svg className="mr-2 -ml-1 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
+                                            </svg>
+                                            Create Written Exam
                                         </button>
                                     </div>
                                 </div>
-                            </form>
-                        </div>
 
-                        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                            {courses.map(course => (
-                                <div key={course._id} className="bg-white overflow-hidden shadow rounded-lg">
-                                    <div className="px-4 py-5 sm:p-6">
-                                        <h3 className="text-lg leading-6 font-medium text-gray-900">
-                                            {course.name}
-                                        </h3>
-                                        <p className="mt-1 max-w-2xl text-sm text-gray-500">
-                                            {course.description}
-                                        </p>
-                                        <div className="mt-4">
-                                            <span className="inline-flex items-center px-3 py-0.5 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
-                                                {course.students?.length || 0} students enrolled
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </>
-                )}
-                
-                {activeTab === 'exams' && (
-                    <>
-                        <div className="mb-6 flex justify-between items-center">
-                            <h2 className="text-lg font-medium">Your Exams</h2>
-                            <button
-                                onClick={() => setShowExamForm(!showExamForm)}
-                                className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md"
-                            >
-                                {showExamForm ? 'Cancel' : 'Create New Exam'}
-                            </button>
-                        </div>
-                        
-                        {showExamForm && (
-                            <div className="bg-white shadow rounded-lg p-6 mb-6">
-                                <h2 className="text-lg font-medium mb-4">Create New Exam</h2>
-                                <form onSubmit={handleCreateExam}>
-                                    <div className="grid grid-cols-1 gap-6">
-                                        <div>
-                                            <label htmlFor="title" className="block text-sm font-medium text-gray-700">
-                                                Exam Title
-                                            </label>
-                                            <input
-                                                type="text"
-                                                name="title"
-                                                id="title"
-                                                required
-                                                value={newExam.title}
-                                                onChange={handleExamInputChange}
-                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                                            />
-                                        </div>
-                                        
-                                        <div>
-                                            <label htmlFor="description" className="block text-sm font-medium text-gray-700">
-                                                Description
-                                            </label>
-                                            <textarea
-                                                name="description"
-                                                id="description"
-                                                value={newExam.description}
-                                                onChange={handleExamInputChange}
-                                                rows={2}
-                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                                            />
-                                        </div>
-                                        
-                                        <div>
-                                            <label htmlFor="courseId" className="block text-sm font-medium text-gray-700">
-                                                Course
-                                            </label>
-                                            <select
-                                                name="courseId"
-                                                id="courseId"
-                                                required
-                                                value={newExam.courseId}
-                                                onChange={handleExamInputChange}
-                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                                            >
-                                                <option value="">Select a course</option>
-                                                {courses.map(course => (
-                                                    <option key={course._id} value={course._id}>
-                                                        {course.name}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                        
-                                        <div>
-                                            <label htmlFor="examType" className="block text-sm font-medium text-gray-700">
-                                                Exam Type
-                                            </label>
-                                            <select
-                                                name="examType"
-                                                id="examType"
-                                                required
-                                                value={newExam.examType}
-                                                onChange={handleExamInputChange}
-                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                                            >
-                                                <option value="mcq">Multiple Choice</option>
-                                                <option value="written">Written</option>
-                                            </select>
-                                        </div>
-                                        
-                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                            <div>
-                                                <label htmlFor="duration" className="block text-sm font-medium text-gray-700">
-                                                    Duration (minutes)
-                                                </label>
-                                                <input
-                                                    type="number"
-                                                    name="duration"
-                                                    id="duration"
-                                                    required
-                                                    min="1"
-                                                    value={newExam.duration}
-                                                    onChange={handleExamInputChange}
-                                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                                                />
-                                            </div>
-                                            
-                                            <div>
-                                                <label htmlFor="startTime" className="block text-sm font-medium text-gray-700">
-                                                    Start Time
-                                                </label>
-                                                <input
-                                                    type="datetime-local"
-                                                    name="startTime"
-                                                    id="startTime"
-                                                    required
-                                                    value={newExam.startTime}
-                                                    onChange={handleExamInputChange}
-                                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                                                />
-                                            </div>
-                                            
-                                            <div>
-                                                <label htmlFor="endTime" className="block text-sm font-medium text-gray-700">
-                                                    End Time
-                                                </label>
-                                                <input
-                                                    type="datetime-local"
-                                                    name="endTime"
-                                                    id="endTime"
-                                                    required
-                                                    value={newExam.endTime}
-                                                    onChange={handleExamInputChange}
-                                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                                                />
-                                            </div>
-                                        </div>
-                                        
-                                        <div className="border-t pt-4">
-                                            <h3 className="text-md font-medium mb-2">Add Questions</h3>
-                                            
-                                            <div className="mb-4 p-4 border rounded-md bg-gray-50">
-                                                <div className="mb-3">
-                                                    <label htmlFor="questionText" className="block text-sm font-medium text-gray-700">
-                                                        Question Text
-                                                    </label>
-                                                    <textarea
-                                                        name="questionText"
-                                                        id="questionText"
-                                                        value={currentQuestion.questionText}
-                                                        onChange={handleQuestionChange}
-                                                        rows={2}
-                                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                                                    />
-                                                </div>
-                                                
-                                                {newExam.examType === 'mcq' && (
-                                                    <>
-                                                        <div className="mb-3">
-                                                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                                Options
-                                                            </label>
-                                                            {currentQuestion.options.map((option, index) => (
-                                                                <div key={index} className="flex items-center mb-2">
-                                                                    <input
-                                                                        type="radio"
-                                                                        name="correctAnswer"
-                                                                        value={option}
-                                                                        checked={currentQuestion.correctAnswer === option}
-                                                                        onChange={handleQuestionChange}
-                                                                        className="mr-2"
-                                                                        disabled={!option}
-                                                                    />
-                                                                    <input
-                                                                        type="text"
-                                                                        value={option}
-                                                                        onChange={(e) => handleOptionChange(index, e.target.value)}
-                                                                        placeholder={`Option ${index + 1}`}
-                                                                        className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                                                                    />
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    </>
-                                                )}
-                                                
-                                                <div className="mb-3">
-                                                    <label htmlFor="points" className="block text-sm font-medium text-gray-700">
-                                                        Points
-                                                    </label>
-                                                    <input
-                                                        type="number"
-                                                        name="points"
-                                                        id="points"
-                                                        min="1"
-                                                        value={currentQuestion.points}
-                                                        onChange={handleQuestionChange}
-                                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                                                    />
-                                                </div>
-                                                
-                                                <button
-                                                    type="button"
-                                                    onClick={addQuestion}
-                                                    className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                                                >
-                                                    Add Question
-                                                </button>
-                                            </div>
-                                            
-                                            {newExam.questions.length > 0 && (
-                                                <div className="mb-4">
-                                                    <h4 className="text-sm font-medium mb-2">Added Questions ({newExam.questions.length})</h4>
-                                                    <ul className="border rounded-md divide-y">
-                                                        {newExam.questions.map((q, index) => (
-                                                            <li key={index} className="p-3 flex justify-between items-center">
-                                                                <div>
-                                                                    <p className="font-medium">{q.questionText}</p>
-                                                                    <p className="text-sm text-gray-500">Points: {q.points}</p>
-                                                                </div>
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => removeQuestion(index)}
-                                                                    className="text-red-600 hover:text-red-800"
-                                                                >
-                                                                    Remove
-                                                                </button>
-                                                            </li>
-                                                        ))}
-                                                    </ul>
-                                                </div>
-                                            )}
-                                        </div>
-                                        
-                                        <div>
+                                {exams.length === 0 ? (
+                                    <div className="bg-white shadow rounded-lg p-8 text-center">
+                                        <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                                        </svg>
+                                        <h3 className="mt-2 text-sm font-medium text-gray-900">No exams found</h3>
+                                        <p className="mt-1 text-sm text-gray-500">Get started by creating a new exam.</p>
+                                        <div className="mt-6 flex flex-col sm:flex-row justify-center gap-3">
                                             <button
-                                                type="submit"
-                                                className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                                                onClick={() => navigate('/create-exam/mcq')}
+                                                className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                                             >
-                                                Create Exam
+                                                Create MCQ Exam
+                                            </button>
+                                            <button
+                                                onClick={() => navigate('/create-exam/written')}
+                                                className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+                                            >
+                                                Create Written Exam
                                             </button>
                                         </div>
                                     </div>
-                                </form>
+                                ) : (
+                                    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                                        {exams.map(exam => (
+                                            <div key={exam._id} className="bg-white overflow-hidden shadow rounded-lg hover:shadow-md transition-shadow duration-300">
+                                                <div className="px-4 py-5 sm:p-6">
+                                                    <h3 className="text-lg leading-6 font-medium text-gray-900 truncate">
+                                                        {exam.title}
+                                                    </h3>
+                                                    <div className="mt-2 flex flex-wrap gap-2">
+                                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                                            {exam.examType === 'mcq' ? 'Multiple Choice' : 'Written'}
+                                                        </span>
+                                                    </div>
+                                                    <p className="mt-3 text-sm text-gray-500 line-clamp-3">
+                                                        {exam.description || 'No description available'}
+                                                    </p>
+                                                    <div className="mt-5">
+                                                        <button
+                                                            onClick={() => navigate(`/exams/${exam._id}`)}
+                                                            className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                                                        >
+                                                            View Details
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         )}
-                        
-                        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                            {exams.map(exam => (
-                                <div key={exam._id} className="bg-white overflow-hidden shadow rounded-lg">
-                                    <div className="px-4 py-5 sm:p-6">
-                                        <h3 className="text-lg leading-6 font-medium text-gray-900">
-                                            {exam.title}
-                                        </h3>
-                                        <p className="mt-1 max-w-2xl text-sm text-gray-500">
-                                            {exam.description}
-                                        </p>
-                                        <div className="mt-2">
-                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                                exam.examType === 'mcq' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'
-                                            }`}>
-                                                {exam.examType === 'mcq' ? 'Multiple Choice' : 'Written'}
-                                            </span>
-                                            <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                                {exam.questions.length} questions
-                                            </span>
-                                        </div>
-                                        <div className="mt-3 text-sm text-gray-500">
-                                            <p>Duration: {exam.duration} minutes</p>
-                                            <p>Start: {new Date(exam.startTime).toLocaleString()}</p>
-                                            <p>End: {new Date(exam.endTime).toLocaleString()}</p>
-                                        </div>
-                                        <div className="mt-4">
-                                            <button
-                                                onClick={() => navigate(`/exams/${exam._id}/results`)}
-                                                className="text-indigo-600 hover:text-indigo-900"
-                                            >
-                                                View Results
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
                     </>
                 )}
             </main>

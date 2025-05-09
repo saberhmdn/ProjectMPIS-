@@ -124,4 +124,31 @@ exports.logout = async (req, res) => {
         console.error('Logout error:', error);
         res.status(500).json({ message: 'Error logging out', error: error.message });
     }
-}; 
+};
+
+// Get current user
+exports.getCurrentUser = async (req, res) => {
+    try {
+        // req.userId is set by the auth middleware
+        const userId = req.userId;
+        
+        // Find the user by ID
+        const user = await User.findById(userId);
+        
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        
+        // Return user data without password
+        res.status(200).json({
+            id: user._id,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+            role: user.role
+        });
+    } catch (error) {
+        console.error('Get current user error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};

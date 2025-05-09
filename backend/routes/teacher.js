@@ -112,9 +112,12 @@ router.post('/login', async (req, res) => {
 
         console.log('Teacher login successful:', teacher._id);
 
-        // Generate JWT token
+        // Generate JWT token with consistent property names
         const token = jwt.sign(
-            { teacherId: teacher._id, role: 'teacher' },
+            { 
+                userId: teacher._id, // Use userId consistently
+                role: 'teacher'
+            },
             process.env.JWT_SECRET,
             { expiresIn: '24h' }
         );
@@ -128,6 +131,7 @@ router.post('/login', async (req, res) => {
                 lastName: teacher.lastName,
                 email: teacher.email,
                 department: teacher.department,
+                subjects: teacher.subjects,
                 role: 'teacher'
             }
         });

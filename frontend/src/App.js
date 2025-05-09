@@ -7,6 +7,8 @@ import PreSignUp from './pages/PreSignUp';
 import Register from './pages/Register';
 import StudentDashboard from './pages/StudentDashboard';
 import TeacherDashboard from './pages/TeacherDashboard';
+import CreateExam from './pages/CreateExam';
+import AddQuestions from './pages/AddQuestions';
 import ProtectedRoute from './components/ProtectedRoute';
 import './App.css';
 
@@ -33,6 +35,22 @@ function App() {
               element={
                 <ProtectedRoute>
                   <TeacherDashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/create-exam/:type" 
+              element={
+                <ProtectedRoute>
+                  <CreateExam />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/add-questions/:examId" 
+              element={
+                <ProtectedRoute>
+                  <AddQuestions />
                 </ProtectedRoute>
               } 
             />

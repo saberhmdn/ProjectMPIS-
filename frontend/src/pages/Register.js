@@ -59,7 +59,7 @@ const Register = () => {
           subjects: formData.subjects.split(',').map(subject => subject.trim()),
           isActive: true
         };
-        await api.post('/teachers/register', userData);
+        await api.post('/api/teachers/register', userData);
       } else {
         userData = {
           firstName: formData.firstName,
@@ -71,7 +71,7 @@ const Register = () => {
           studentId: formData.studentId,
           level: formData.level
         };
-        await api.post('/students/register', userData);
+        await api.post('/api/students/register', userData);
       }
       
       navigate('/login', { state: { message: 'Registration successful! Please log in.' } });
@@ -326,6 +326,8 @@ const Register = () => {
 };
 
 export default Register;
+
+
 
 
 

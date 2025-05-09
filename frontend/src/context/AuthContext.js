@@ -1,11 +1,8 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import axios from 'axios';
-import config from '../config';
+import api from '../services/api';
 
-// Create the context
-export const AuthContext = createContext();
+const AuthContext = createContext();
 
-// Custom hook to use the auth context
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
@@ -13,20 +10,23 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Check if user is logged in on initial load
+        // Check if user is already logged in
         const checkLoggedIn = async () => {
             try {
                 const token = localStorage.getItem('token');
-                
                 if (token) {
-                    // Verify token and get user data
-                    const response = await axios.get(`${config.API_BASE_URL}/api/auth/me`, {
-                        headers: {
-                            Authorization: `Bearer ${token}`
-                        }
-                    });
+                    // Make sure token is included in the request
+                    api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+                    const response = await api.get('/api/auth/me');
                     
-                    setUser(response.data.user);
+                    // Add role to user data if it's not included in the response
+                    const userData = response.data;
+                    if (!userData.role) {
+                        // Try to determine role from token or set a default
+                        userData.role = 'student'; // Default role
+                    }
+                    
+                    setUser(userData);
                 }
             } catch (error) {
                 console.error('Auth check error:', error);
@@ -35,60 +35,66 @@ export const AuthProvider = ({ children }) => {
                 setLoading(false);
             }
         };
-        
+
         checkLoggedIn();
     }, []);
 
-    const login = async (credentials) => {
+    const login = async (email, password, role) => {
         try {
-            console.log('Login attempt with:', credentials);
+            console.log('Login attempt with:', { email, role });
             
-            // Try the general auth login endpoint first
-            let response;
-            try {
-                response = await axios.post(`${config.API_BASE_URL}/api/auth/login`, credentials);
-            } catch (error) {
-                console.log('General auth login failed, trying role-specific endpoints');
-                
-                // If general login fails, try student login
-                try {
-                    response = await axios.post(`${config.API_BASE_URL}/api/students/login`, credentials);
-                    // If successful, extract student data
-                    if (response.data.student) {
-                        response.data.user = response.data.student;
-                        response.data.user.role = 'student';
-                    }
-                } catch (studentError) {
-                    console.log('Student login failed, trying teacher login');
-                    
-                    // If student login fails, try teacher login
-                    response = await axios.post(`${config.API_BASE_URL}/api/teachers/login`, credentials);
-                    // If successful, extract teacher data
-                    if (response.data.teacher) {
-                        response.data.user = response.data.teacher;
-                        response.data.user.role = 'teacher';
-                    }
-                }
-            }
+            // Use the correct endpoint based on role
+            const endpoint = role === 'teacher' 
+                ? '/api/teachers/login' 
+                : '/api/students/login';
             
-            console.log('Login response:', response.data);
+            console.log('Using login endpoint:', endpoint);
+            
+            const response = await api.post(endpoint, { email, password });
+            console.log('Login response received');
             
             // Extract token and user data
-            const { token, user, student, teacher } = response.data;
+            const { token, teacher, student } = response.data;
+            const userData = teacher || student;
             
-            // Use the appropriate user object
-            const userData = user || student || teacher;
-            
-            if (!token || !userData) {
-                throw new Error('Invalid response format from server');
+            if (!token) {
+                console.error('No token received in login response');
+                throw new Error('Authentication failed: No token received');
             }
             
-            localStorage.setItem('token', token);
-            setUser(userData);
+            if (!userData) {
+                console.error('No user data received in login response');
+                throw new Error('Authentication failed: No user data received');
+            }
             
-            return { token, user: userData };
+            // Store token in localStorage
+            localStorage.setItem('token', token);
+            console.log('Token stored in localStorage');
+            
+            // Create user object with role
+            const userObject = {
+                ...userData,
+                role: role
+            };
+            
+            // Set user in context
+            setUser(userObject);
+            console.log('User set in context:', userObject);
+            
+            return { success: true, user: userObject };
         } catch (error) {
             console.error('Login error:', error);
+            throw error;
+        }
+    };
+
+    const register = async (userData, role) => {
+        try {
+            const endpoint = role === 'teacher' ? '/api/teachers/register' : '/api/students/register';
+            const response = await api.post(endpoint, userData);
+            return response.data;
+        } catch (error) {
+            console.error('Registration error:', error);
             throw error;
         }
     };
@@ -98,39 +104,27 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
     };
 
-    const register = async (userData, role) => {
-        try {
-            // Use the appropriate endpoint based on role
-            const endpoint = role === 'teacher' 
-                ? `${config.API_BASE_URL}/api/teachers/register` 
-                : `${config.API_BASE_URL}/api/students/register`;
-            
-            console.log(`Sending registration to ${endpoint} with data:`, JSON.stringify(userData, null, 2));
-            
-            const response = await axios.post(endpoint, userData);
-            console.log('Registration response:', response.data);
-            
-            return response.data;
-        } catch (error) {
-            console.error('Registration error in AuthContext:', error);
-            if (error.response) {
-                console.error('Server error response:', error.response.data);
-                console.error('Status code:', error.response.status);
-                console.error('Headers:', error.response.headers);
-            } else if (error.request) {
-                console.error('No response received:', error.request);
-            } else {
-                console.error('Error setting up request:', error.message);
-            }
-            throw error;
-        }
+    // Add a function to check if the token is valid
+    const checkToken = () => {
+        const token = localStorage.getItem('token');
+        console.log('Current token in localStorage:', token);
+        return !!token;
+    };
+
+    const value = {
+        user,
+        loading,
+        login,
+        register,
+        logout,
+        checkToken
     };
 
     return (
-        <AuthContext.Provider value={{ user, loading, login, logout, register }}>
+        <AuthContext.Provider value={value}>
             {children}
         </AuthContext.Provider>
     );
 };
 
-export default AuthProvider;
+export default AuthContext;

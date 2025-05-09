@@ -1,9 +1,34 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import ExamService from '../services/ExamService';
 
 const PreSignUp = () => {
   const [selectedRole, setSelectedRole] = useState('');
+  const [activeExams, setActiveExams] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchActiveExams = async () => {
+      try {
+        setLoading(true);
+        // Only fetch exams if we're showing them to users before signup
+        // This is optional and can be removed if not needed
+        const examsData = await ExamService.getActiveExams();
+        setActiveExams(examsData);
+        setError('');
+      } catch (err) {
+        console.error('Error fetching exams:', err);
+        setError('Failed to load available exams.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    // Comment out this line if you don't need to fetch exams before signup
+    // fetchActiveExams();
+  }, []);
 
   const handleRoleSelect = (role) => {
     setSelectedRole(role);
@@ -122,3 +147,4 @@ const PreSignUp = () => {
 };
 
 export default PreSignUp;
+

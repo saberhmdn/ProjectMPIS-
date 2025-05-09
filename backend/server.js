@@ -2,19 +2,12 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const dotenv = require('dotenv');
-
-// Import routes
 const authRoutes = require('./routes/auth');
 const examRoutes = require('./routes/exam');
 const studentRoutes = require('./routes/student');
 const teacherRoutes = require('./routes/teacher');
 
 dotenv.config();
-
-// Set default JWT secret for development
-if (!process.env.JWT_SECRET) {
-    process.env.JWT_SECRET = 'development-secret-key';
-}
 
 const app = express();
 
@@ -45,10 +38,38 @@ app.use('/api/exams', examRoutes);
 app.use('/api/students', studentRoutes);
 app.use('/api/teachers', teacherRoutes);
 
-// Error handling middleware
+// Error handling middleware - should be after all routes
 app.use((err, req, res, next) => {
+    console.error('Global error handler caught:', err);
     console.error(err.stack);
-    res.status(500).json({ message: 'Something went wrong!', error: err.message });
+    
+    // Check for specific error types
+    if (err.name === 'ValidationError') {
+        return res.status(400).json({ 
+            message: 'Validation Error', 
+            error: err.message,
+            details: err.errors
+        });
+    }
+    
+    if (err.name === 'CastError') {
+        return res.status(400).json({ 
+            message: 'Invalid ID format', 
+            error: err.message 
+        });
+    }
+    
+    // Default error response
+    res.status(500).json({ 
+        message: 'Something went wrong on the server', 
+        error: err.message,
+        stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+    });
+});
+
+// 404 handler - should be after all routes and before error handler
+app.use((req, res) => {
+    res.status(404).json({ message: `Cannot ${req.method} ${req.originalUrl}` });
 });
 
 // Set port

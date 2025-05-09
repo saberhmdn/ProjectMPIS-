@@ -7,7 +7,7 @@ class CourseService {
     // Get all courses for a teacher
     async getTeacherCourses() {
         const token = localStorage.getItem('token');
-        const response = await axios.get(`${API_URL}/teacher`, {
+        const response = await axios.get(`${API_URL}/my-courses`, {
             headers: { Authorization: `Bearer ${token}` }
         });
         return response.data;
@@ -51,5 +51,6 @@ class CourseService {
 }
 
 export default new CourseService();
+
 
 

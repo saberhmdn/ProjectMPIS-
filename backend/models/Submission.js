@@ -6,8 +6,10 @@ const answerSchema = new mongoose.Schema({
         required: true
     },
     selectedAnswer: {
-        type: String,
-        required: true
+        type: String
+    },
+    writtenAnswer: {
+        type: String
     },
     isCorrect: {
         type: Boolean,
@@ -16,6 +18,9 @@ const answerSchema = new mongoose.Schema({
     pointsEarned: {
         type: Number,
         default: 0
+    },
+    feedback: {
+        type: String
     }
 });
 
@@ -36,7 +41,8 @@ const submissionSchema = new mongoose.Schema({
         required: true
     },
     endTime: {
-        type: Date
+        type: Date,
+        required: true
     },
     totalScore: {
         type: Number,
@@ -46,16 +52,20 @@ const submissionSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
-    createdAt: {
+    isGraded: {
+        type: Boolean,
+        default: false
+    },
+    submittedAt: {
         type: Date,
         default: Date.now
     }
 });
 
 // Calculate total score before saving
-submissionSchema.pre('save', function (next) {
-    if (this.isModified('answers')) {
-        this.totalScore = this.answers.reduce((sum, answer) => sum + answer.pointsEarned, 0);
+submissionSchema.pre('save', function(next) {
+    if (this.answers && this.answers.length > 0) {
+        this.totalScore = this.answers.reduce((sum, answer) => sum + (answer.pointsEarned || 0), 0);
     }
     next();
 });

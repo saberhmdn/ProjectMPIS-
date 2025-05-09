@@ -1,54 +1,34 @@
-# Backend Documentation
+# Exam Management System - Backend
 
-## Project Structure
-```
-backend/
-├── models/          # Database models
-├── routes/          # API routes
-├── middleware/      # Custom middleware
-├── config/          # Configuration files
-└── server.js        # Main server file
-```
+A Node.js backend for an exam management system that allows teachers to create and manage exams, and students to take exams and view their results.
 
 ## Models
 
-### 1. Student Model
+### 1. User Model
 ```javascript
-const studentSchema = new mongoose.Schema({
-    firstName: { type: String, required: true, trim: true },
-    lastName: { type: String, required: true, trim: true },
-    email: { type: String, required: true, unique: true, trim: true },
+const userSchema = new mongoose.Schema({
+    firstName: { type: String, required: true },
+    lastName: { type: String, required: true },
+    email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
-    studentId: { type: String, required: true, unique: true },
-    department: { type: String, required: true },
-    level: { type: Number, required: true },
-    phoneNumber: { type: String }
+    role: { type: String, enum: ['student', 'teacher'], required: true },
+    department: { type: String },
+    createdAt: { type: Date, default: Date.now }
 });
 ```
 
-### 2. Teacher Model
+### 2. Exam Model
 ```javascript
-const teacherSchema = new mongoose.Schema({
-    firstName: { type: String, required: true, trim: true },
-    lastName: { type: String, required: true, trim: true },
-    email: { type: String, required: true, unique: true, trim: true },
-    password: { type: String, required: true },
-    department: { type: String, required: true },
-    phoneNumber: { type: String },
-    subjects: [{ type: String }]
-});
-```
-
-### 3. Course Model
-```javascript
-const courseSchema = new mongoose.Schema({
+const examSchema = new mongoose.Schema({
     title: { type: String, required: true },
-    description: { type: String, required: true },
-    code: { type: String, required: true },
-    credits: { type: Number, required: true },
-    department: { type: String, required: true },
-    prerequisites: [{ type: String }],
-    teacher: { type: mongoose.Schema.Types.ObjectId, ref: 'Teacher', required: true }
+    description: { type: String },
+    teacher: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    questions: [questionSchema],
+    duration: { type: Number, required: true },
+    startTime: { type: Date, required: true },
+    endTime: { type: Date, required: true },
+    examType: { type: String, enum: ['mcq', 'written'], default: 'mcq' },
+    isActive: { type: Boolean, default: true }
 });
 ```
 
@@ -64,32 +44,64 @@ const courseSchema = new mongoose.Schema({
 - POST /login - Teacher login
 - GET /profile - Get teacher profile (protected)
 
-### 3. Course Routes (/api/courses)
-- POST / - Create a new course (protected)
-- GET / - Get all courses
-- GET /:id - Get specific course
-- PUT /:id - Update course (protected)
-- DELETE /:id - Delete course (protected)
+### 3. Exam Routes (/api/exams)
+- POST / - Create a new exam (protected)
+- GET /teacher - Get all exams for a teacher (protected)
+- GET /active - Get active exams for students (protected)
+- GET /:examId - Get exam details (protected)
+- POST /:examId/submit - Submit an exam (protected)
+- GET /:examId/results - Get exam results (protected)
+- PUT /:examId - Update an exam (protected)
+- DELETE /:examId - Delete an exam (protected)
 
 ## Middleware
+- auth.js - Authentication middleware to protect routes
 
-### 1. Authentication Middleware
-```javascript
-const auth = async (req, res, next) => {
-    try {
-        const token = req.header('Authorization').replace('Bearer ', '');
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        req.userId = decoded.userId;
-        next();
-    } catch (error) {
-        res.status(401).json({ message: 'Please authenticate' });
-    }
-};
+## Security Features
+1. Password hashing using bcrypt
+2. JWT authentication
+3. Protected routes
+4. Input validation
+5. Error handling
+
+## Error Handling
+All routes include try-catch blocks to handle errors and return appropriate status codes:
+- 200: Success
+- 201: Created
+- 400: Bad Request
+- 401: Unauthorized
+- 403: Forbidden
+- 404: Not Found
+- 500: Server Error
+
+## Database
+- MongoDB with Mongoose ODM
+- Collections: users, exams, submissions
+- Automatic collection creation
+- Data validation
+- Relationships between collections
+
+## Setup Instructions
+1. Install dependencies:
+```bash
+npm install
 ```
 
-## API Endpoints
+2. Create a .env file:
+```env
+PORT=5001
+MONGODB_URI=your_mongodb_connection_string
+JWT_SECRET=your_jwt_secret
+```
 
-### Student Endpoints
+3. Start the server:
+```bash
+npm start
+```
+
+## API Documentation
+
+### Authentication Endpoints
 ```javascript
 // Register
 POST /api/students/register
@@ -98,10 +110,7 @@ Body: {
     lastName: String,
     email: String,
     password: String,
-    studentId: String,
-    department: String,
-    level: Number,
-    phoneNumber: String
+    department: String
 }
 
 // Login

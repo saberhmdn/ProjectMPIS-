@@ -6,34 +6,15 @@ const auth = require('../middleware/auth');
 // Get public exams (no auth required)
 router.get('/public', examController.getPublicExams);
 
-// Apply auth middleware to all routes below this line
-router.use(auth);
+// Individual routes with auth middleware
+router.post('/', auth, examController.createExam);
+router.get('/teacher', auth, examController.getTeacherExams);
+router.get('/active', auth, examController.getActiveExams);
+router.get('/:examId', auth, examController.getExamDetails);
+router.put('/:examId/questions', auth, examController.updateExamQuestions);
+router.post('/:examId/submit', auth, examController.submitExam);
+router.get('/:examId/results', auth, examController.getExamResults);
+router.put('/:examId', auth, examController.updateExam);
+router.delete('/:examId', auth, examController.deleteExam);
 
-// Create a new exam
-router.post('/', examController.createExam);
-
-// Get all exams for a teacher
-router.get('/teacher', examController.getTeacherExams);
-
-// Get active exams for students
-router.get('/active', examController.getActiveExams);
-
-// Get exam details
-router.get('/:examId', examController.getExamDetails);
-
-// Update exam questions - make sure this route is defined before other routes with :examId
-router.put('/:examId/questions', examController.updateExamQuestions);
-
-// Submit an exam (for students)
-router.post('/:examId/submit', examController.submitExam);
-
-// Get exam results
-router.get('/:examId/results', examController.getExamResults);
-
-// Update an exam
-router.put('/:examId', examController.updateExam);
-
-// Delete an exam
-router.delete('/:examId', examController.deleteExam);
-
-module.exports = router; 
+module.exports = router;

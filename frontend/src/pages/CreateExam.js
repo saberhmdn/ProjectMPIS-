@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import ExamService from '../services/ExamService';
 import { useAuth } from '../context/AuthContext';
 
 const CreateExam = () => {
-    const { type } = useParams();
     const navigate = useNavigate();
     const { user, logout } = useAuth();
     const [formData, setFormData] = useState({
@@ -13,7 +12,8 @@ const CreateExam = () => {
         duration: 60,
         startTime: '',
         endTime: '',
-        examType: type || 'mcq',
+        examType: 'mcq',
+        isActive: true,
         questions: []
     });
     const [loading, setLoading] = useState(false);
@@ -36,20 +36,24 @@ const CreateExam = () => {
             navigate('/student-dashboard');
             return;
         }
-
-        // Set exam type based on URL parameter
-        setFormData(prev => ({
-            ...prev,
-            examType: type || 'mcq'
-        }));
-    }, [type, user, navigate]);
+    }, [user, navigate]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setFormData(prevState => ({
-            ...prevState,
+        setFormData(prev => ({
+            ...prev,
             [name]: value
         }));
+    };
+
+    // Format date-time for input fields
+    const formatDateTime = (dateString) => {
+        if (!dateString) return '';
+        
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) return '';
+        
+        return date.toISOString().slice(0, 16);
     };
 
     const handleSubmit = async (e) => {
@@ -91,6 +95,7 @@ const CreateExam = () => {
                 startTime: formData.startTime,
                 endTime: formData.endTime,
                 examType: formData.examType,
+                isActive: formData.isActive,
                 questions: [] // Will be added later in a separate page
             };
             
@@ -132,30 +137,19 @@ const CreateExam = () => {
                 } else {
                     setError(err.response.data?.message || 'Failed to create exam');
                 }
-            } else if (err.request) {
-                // No response received
-                setError('No response from server. Please check your connection.');
             } else {
-                // Other error
-                setError(err.message || 'An error occurred while creating the exam');
+                setError('Network error. Please check your connection and try again.');
             }
         } finally {
             setLoading(false);
         }
     };
 
-    // Helper function to format date-time for input
-    const formatDateTime = (date) => {
-        if (!date) return '';
-        const d = new Date(date);
-        return d.toISOString().slice(0, 16); // Format: YYYY-MM-DDTHH:MM
-    };
-
     return (
         <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
             <div className="max-w-lg w-full mx-auto bg-white p-8 rounded-lg shadow">
                 <h1 className="text-2xl font-bold text-gray-900 mb-6">
-                    Create {type === 'mcq' ? 'Multiple Choice' : 'Written'} Exam
+                    Create Exam
                 </h1>
                 
                 {error && (
@@ -189,10 +183,27 @@ const CreateExam = () => {
                             name="description"
                             value={formData.description}
                             onChange={handleChange}
-                            rows="4"
+                            rows="3"
                             className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                             required
                         ></textarea>
+                    </div>
+                    
+                    <div className="mb-4">
+                        <label htmlFor="examType" className="block text-gray-700 text-sm font-bold mb-2">
+                            Exam Type *
+                        </label>
+                        <select
+                            id="examType"
+                            name="examType"
+                            value={formData.examType}
+                            onChange={handleChange}
+                            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                            required
+                        >
+                            <option value="mcq">Multiple Choice</option>
+                            <option value="written">Written</option>
+                        </select>
                     </div>
                     
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -241,6 +252,19 @@ const CreateExam = () => {
                                 required
                             />
                         </div>
+                    </div>
+                    
+                    <div className="mb-4">
+                        <label className="flex items-center">
+                            <input
+                                type="checkbox"
+                                name="isActive"
+                                checked={formData.isActive}
+                                onChange={handleChange}
+                                className="mr-2"
+                            />
+                            <span className="text-gray-700 text-sm font-bold">Make exam active immediately</span>
+                        </label>
                     </div>
                     
                     <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">

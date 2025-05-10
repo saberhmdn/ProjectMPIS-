@@ -48,6 +48,10 @@ const submissionSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
+    isPassed: {
+        type: Boolean,
+        default: false
+    },
     isSubmitted: {
         type: Boolean,
         default: false
@@ -62,12 +66,30 @@ const submissionSchema = new mongoose.Schema({
     }
 });
 
-// Calculate total score before saving
-submissionSchema.pre('save', function(next) {
+// Calculate total score and determine if passed before saving
+submissionSchema.pre('save', async function(next) {
     if (this.answers && this.answers.length > 0) {
         this.totalScore = this.answers.reduce((sum, answer) => sum + (answer.pointsEarned || 0), 0);
+        
+        try {
+            // Get the exam to determine passing score
+            await this.populate('exam');
+            
+            // Default passing threshold is 60% if not specified in the exam
+            const passingThreshold = this.exam.passingScore || 0.6;
+            const maxPossibleScore = this.exam.questions.reduce((sum, q) => sum + (q.points || 1), 0);
+            
+            // Calculate if passed
+            this.isPassed = this.totalScore >= (maxPossibleScore * passingThreshold);
+            console.log(`Submission for exam ${this.exam._id}, student ${this.student}: Score=${this.totalScore}, Passed=${this.isPassed}`);
+            next();
+        } catch (err) {
+            console.error('Error determining pass/fail status:', err);
+            next(err);
+        }
+    } else {
+        next();
     }
-    next();
 });
 
 module.exports = mongoose.model('Submission', submissionSchema); 

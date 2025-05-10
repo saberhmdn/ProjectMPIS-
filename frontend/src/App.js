@@ -9,7 +9,11 @@ import StudentDashboard from './pages/StudentDashboard';
 import TeacherDashboard from './pages/TeacherDashboard';
 import CreateExam from './pages/CreateExam';
 import AddQuestions from './pages/AddQuestions';
+import TakeExam from './pages/TakeExam';
 import ProtectedRoute from './components/ProtectedRoute';
+import ExamDetails from './pages/ExamDetails';
+import EditExam from './pages/EditExam';
+import ExamResults from './pages/ExamResults';
 import './App.css';
 
 function App() {
@@ -39,7 +43,7 @@ function App() {
               } 
             />
             <Route 
-              path="/create-exam/:type" 
+              path="/create-exam" 
               element={
                 <ProtectedRoute>
                   <CreateExam />
@@ -54,6 +58,31 @@ function App() {
                 </ProtectedRoute>
               } 
             />
+            <Route 
+              path="/take-exam/:examId" 
+              element={
+                <ProtectedRoute>
+                  <TakeExam />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/exam/:examId" 
+              element={
+                <ProtectedRoute>
+                  <ExamDetails />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/edit-exam/:examId" 
+              element={
+                <ProtectedRoute>
+                  <EditExam />
+                </ProtectedRoute>
+              } 
+            />
+            <Route path="/exam/:examId/results" element={<ExamResults />} />
           </Routes>
         </div>
       </Router>

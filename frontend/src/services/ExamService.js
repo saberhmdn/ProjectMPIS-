@@ -113,17 +113,34 @@ const ExamService = {
     // Delete an exam
     deleteExam: async (examId) => {
         try {
-            // Check if token exists before making the request
             const token = localStorage.getItem('token');
             if (!token) {
                 console.error('No authentication token found');
                 throw new Error('Authentication required. Please log in again.');
             }
             
-            const response = await api.delete(`/api/exams/${examId}`);
+            console.log(`Attempting to delete exam ${examId}`);
+            const response = await api.delete(`/api/exams/${examId}`, {
+                headers: { 
+                    Authorization: `Bearer ${token}` 
+                }
+            });
+            console.log('Delete response:', response.data);
             return response.data;
         } catch (error) {
             console.error(`Error deleting exam ${examId}:`, error);
+            
+            // Enhance error message based on status code
+            if (error.response) {
+                if (error.response.status === 404) {
+                    throw new Error('Exam not found. It may have been already deleted.');
+                } else if (error.response.status === 403) {
+                    throw new Error('You are not authorized to delete this exam.');
+                } else if (error.response.status === 500) {
+                    throw new Error('Server error. Please try again later.');
+                }
+            }
+            
             throw error;
         }
     },
@@ -153,6 +170,63 @@ const ExamService = {
             return response.data;
         } catch (error) {
             console.error('Error fetching active exams:', error);
+            throw error;
+        }
+    },
+
+    // Submit an exam
+    submitExam: async (examId, answerData) => {
+        try {
+            // Check if token exists before making the request
+            const token = localStorage.getItem('token');
+            if (!token) {
+                console.error('No authentication token found');
+                throw new Error('Authentication required. Please log in again.');
+            }
+            
+            const response = await api.post(`/api/exams/${examId}/submit`, answerData);
+            return response.data;
+        } catch (error) {
+            console.error(`Error submitting exam ${examId}:`, error);
+            throw error;
+        }
+    },
+
+    // Update an exam
+    updateExam: async (examId, examData) => {
+        const token = localStorage.getItem('token');
+        const response = await api.put(`/api/exams/${examId}`, examData, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        return response.data;
+    },
+
+    // Delete an exam
+    deleteExam: async (examId) => {
+        const token = localStorage.getItem('token');
+        const response = await api.delete(`/api/exams/${examId}`, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        return response.data;
+    },
+
+    // Get exam results (for teachers)
+    getExamResults: async (examId) => {
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                console.error('No authentication token found');
+                throw new Error('Authentication required. Please log in again.');
+            }
+            
+            const response = await api.get(`/api/exams/${examId}/results`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            console.log('API response for exam results:', response.data);
+            return response.data;
+        } catch (error) {
+            console.error(`Error fetching exam results for ${examId}:`, error);
             throw error;
         }
     }

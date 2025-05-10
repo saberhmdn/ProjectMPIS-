@@ -63,86 +63,81 @@ const StudentDashboard = () => {
                 )}
 
                 <div className="px-4 py-6 sm:px-0">
-                    <div className="mb-6">
-                        <h2 className="text-2xl font-bold text-gray-900">Active Exams</h2>
-                        <p className="mt-1 text-sm text-gray-500">
-                            These are the exams that are currently available for you to take.
-                        </p>
+                    <div className="mb-6 flex justify-between items-center">
+                        <div>
+                            <h2 className="text-2xl font-bold text-gray-900">Active Exams</h2>
+                            <p className="mt-1 text-sm text-gray-500">
+                                These are the exams that are currently available for you to take.
+                            </p>
+                        </div>
+                        <div className="hidden md:block">
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800">
+                                <svg className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                Upcoming Deadlines
+                            </span>
+                        </div>
                     </div>
 
                     {loading ? (
                         <div className="text-center py-10">
-                            <div className="spinner"></div>
-                            <p className="mt-2 text-gray-600">Loading exams...</p>
+                            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500 mx-auto"></div>
+                            <p className="mt-4 text-gray-600">Loading your exams...</p>
                         </div>
                     ) : activeExams.length === 0 ? (
-                        <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-                            <div className="px-4 py-5 sm:p-6 text-center">
-                                <p className="text-gray-500">There are no active exams at the moment.</p>
-                                <p className="text-gray-500 mt-2">
-                                    Check back later for upcoming exams.
-                                </p>
-                            </div>
+                        <div className="bg-white shadow-md rounded-lg p-8 text-center">
+                            <svg className="h-16 w-16 text-gray-400 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                            </svg>
+                            <h3 className="text-lg font-medium text-gray-900 mb-2">No Active Exams</h3>
+                            <p className="text-gray-500">There are no active exams at the moment.</p>
+                            <p className="text-gray-500 mt-2">Check back later for upcoming exams.</p>
                         </div>
                     ) : (
-                        <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-                            <table className="min-w-full divide-y divide-gray-200">
-                                <thead className="bg-gray-50">
-                                    <tr>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Title
-                                        </th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Type
-                                        </th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Duration
-                                        </th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Start Time
-                                        </th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            End Time
-                                        </th>
-                                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Action
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody className="bg-white divide-y divide-gray-200">
-                                    {activeExams.map((exam) => (
-                                        <tr key={exam._id}>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm font-medium text-gray-900">{exam.title}</div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                        <div className="space-y-4">
+                            {activeExams.map((exam) => (
+                                <div key={exam._id} className="bg-white shadow-md rounded-lg overflow-hidden hover:shadow-lg transition-all duration-300 border-l-4 border-indigo-500">
+                                    <div className="md:flex">
+                                        <div className="p-6 md:flex-1">
+                                            <div className="flex flex-wrap justify-between items-start gap-2 mb-3">
+                                                <h3 className="text-xl font-semibold text-gray-900">{exam.title}</h3>
+                                                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
                                                     exam.examType === 'mcq' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
                                                 }`}>
                                                     {exam.examType === 'mcq' ? 'Multiple Choice' : 'Written'}
                                                 </span>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                {exam.duration} minutes
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                {formatDate(exam.startTime)}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                {formatDate(exam.endTime)}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                <Link 
-                                                    to={`/take-exam/${exam._id}`} 
-                                                    className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm font-medium"
-                                                >
-                                                    Take Exam
-                                                </Link>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                                            </div>
+                                            
+                                            <div className="grid grid-cols-2 gap-4 mb-4">
+                                                <div className="flex items-center text-sm text-gray-600">
+                                                    <svg className="h-5 w-5 mr-2 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                    </svg>
+                                                    <span>{exam.duration} minutes</span>
+                                                </div>
+                                                <div className="flex items-center text-sm text-gray-600">
+                                                    <svg className="h-5 w-5 mr-2 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                    </svg>
+                                                    <span>Ends: {formatDate(exam.endTime)}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="bg-gray-50 p-6 flex items-center justify-center md:w-64">
+                                            <Link 
+                                                to={`/take-exam/${exam._id}`} 
+                                                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-center px-6 py-3 rounded-md font-medium transition-colors flex items-center justify-center"
+                                            >
+                                                <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                                </svg>
+                                                Take Exam
+                                            </Link>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     )}
                 </div>

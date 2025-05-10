@@ -40,36 +40,44 @@ app.use('/api/teachers', teacherRoutes);
 
 // Error handling middleware - should be after all routes
 app.use((err, req, res, next) => {
-    console.error('Global error handler caught:', err);
-    console.error(err.stack);
-    
-    // Check for specific error types
-    if (err.name === 'ValidationError') {
-        return res.status(400).json({ 
-            message: 'Validation Error', 
-            error: err.message,
-            details: err.errors
-        });
-    }
-    
-    if (err.name === 'CastError') {
-        return res.status(400).json({ 
-            message: 'Invalid ID format', 
-            error: err.message 
-        });
-    }
-    
-    // Default error response
-    res.status(500).json({ 
-        message: 'Something went wrong on the server', 
-        error: err.message,
-        stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+  console.error('Global error handler caught:', err);
+  console.error(err.stack);
+  
+  // Check for specific error types
+  if (err.name === 'ValidationError') {
+    return res.status(400).json({ 
+      message: 'Validation Error', 
+      error: err.message,
+      details: err.errors
     });
+  }
+  
+  if (err.name === 'CastError') {
+    return res.status(400).json({ 
+      message: 'Invalid ID format', 
+      error: err.message 
+    });
+  }
+  
+  if (err.name === 'MongoError' && err.code === 11000) {
+    return res.status(400).json({
+      message: 'Duplicate key error',
+      error: err.message
+    });
+  }
+  
+  // Default error response
+  res.status(500).json({ 
+    message: 'Something went wrong on the server', 
+    error: err.message,
+    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+  });
 });
 
 // 404 handler - should be after all routes and before error handler
 app.use((req, res) => {
-    res.status(404).json({ message: `Cannot ${req.method} ${req.originalUrl}` });
+  console.log(`Route not found: ${req.method} ${req.originalUrl}`);
+  res.status(404).json({ message: `Cannot ${req.method} ${req.originalUrl}` });
 });
 
 // Set port

@@ -86,10 +86,13 @@ exports.submitExam = async (req, res) => {
   try {
     const { answers } = req.body;
     const examId = req.params.examId;
+    // Get student ID from the authenticated user
     const studentId = req.user.userId;
     
-    if (!answers) {
-      return res.status(400).json({ message: 'Please provide answers' });
+    console.log(`Processing exam submission for exam ${examId} by student ${studentId}`);
+    
+    if (!answers || !Array.isArray(answers)) {
+      return res.status(400).json({ message: 'Please provide answers in the correct format' });
     }
     
     const exam = await Exam.findById(examId);
@@ -143,6 +146,13 @@ exports.submitExam = async (req, res) => {
     console.log(`Passing threshold: ${passingThreshold * 100}%`);
     console.log(`Passed: ${isPassed}`);
     
+    // Make sure studentId is defined and valid
+    if (!studentId) {
+      return res.status(400).json({ message: 'Student ID is required' });
+    }
+
+    console.log('Using student ID:', studentId);
+
     // Create or update submission
     const submission = new Submission({
       exam: examId,
@@ -156,6 +166,8 @@ exports.submitExam = async (req, res) => {
       isGraded: true, // Auto-graded for objective questions
       submittedAt: new Date()
     });
+    
+    console.log(`Created submission object with student ID: ${submission.student}`);
     
     await submission.save();
     

@@ -22,38 +22,30 @@ const CreateExam = () => {
     useEffect(() => {
         // Check if token exists
         const token = localStorage.getItem('token');
-        console.log('Token in localStorage:', token ? 'exists' : 'missing');
         
         // Redirect if not logged in or not a teacher
         if (!token || !user) {
-            console.log('No token or user, redirecting to login');
             navigate('/login');
             return;
         }
 
         if (user.role !== 'teacher') {
-            console.log('User is not a teacher, redirecting');
             navigate('/student-dashboard');
             return;
         }
     }, [user, navigate]);
 
     const handleChange = (e) => {
-        const { name, value } = e.target;
+        const { name, value, type, checked } = e.target;
         setFormData(prev => ({
             ...prev,
-            [name]: value
+            [name]: type === 'checkbox' ? checked : value
         }));
     };
 
-    // Format date-time for input fields
-    const formatDateTime = (dateString) => {
-        if (!dateString) return '';
-        
-        const date = new Date(dateString);
-        if (isNaN(date.getTime())) return '';
-        
-        return date.toISOString().slice(0, 16);
+    const formatDateTime = (dateTimeStr) => {
+        if (!dateTimeStr) return '';
+        return dateTimeStr;
     };
 
     const handleSubmit = async (e) => {
@@ -96,10 +88,8 @@ const CreateExam = () => {
                 endTime: formData.endTime,
                 examType: formData.examType,
                 isActive: formData.isActive,
-                questions: [] // Will be added later in a separate page
+                questions: []
             };
-            
-            console.log('Submitting exam data:', examData);
             
             // Validate required fields
             if (!examData.title || !examData.description || !examData.duration || 
@@ -110,25 +100,18 @@ const CreateExam = () => {
             }
             
             const result = await ExamService.createExam(examData);
-            console.log('Exam created successfully:', result);
-            
-            // Redirect to add questions page instead of dashboard
             navigate(`/add-questions/${result.exam._id}`);
         } catch (err) {
             console.error('Error creating exam:', err);
             
             if (err.response) {
-                // Server responded with an error
                 if (err.response.status === 401) {
                     setError('Authentication failed. Please log in again.');
-                    // Redirect to login after a short delay
                     setTimeout(() => {
                         navigate('/login');
                     }, 2000);
                 } else if (err.response.status === 400) {
-                    // Validation error
                     if (err.response.data.errors) {
-                        // Format validation errors
                         const errorMessages = Object.values(err.response.data.errors).join(', ');
                         setError(`Validation error: ${errorMessages}`);
                     } else {
@@ -146,151 +129,199 @@ const CreateExam = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-            <div className="max-w-lg w-full mx-auto bg-white p-8 rounded-lg shadow">
-                <h1 className="text-2xl font-bold text-gray-900 mb-6">
-                    Create Exam
-                </h1>
-                
-                {error && (
-                    <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6" role="alert">
-                        <p>{error}</p>
-                    </div>
-                )}
-                
-                <form onSubmit={handleSubmit}>
-                    <div className="mb-4">
-                        <label htmlFor="title" className="block text-gray-700 text-sm font-bold mb-2">
-                            Exam Title *
-                        </label>
-                        <input
-                            type="text"
-                            id="title"
-                            name="title"
-                            value={formData.title}
-                            onChange={handleChange}
-                            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                            required
-                        />
-                    </div>
-                    
-                    <div className="mb-4">
-                        <label htmlFor="description" className="block text-gray-700 text-sm font-bold mb-2">
-                            Description *
-                        </label>
-                        <textarea
-                            id="description"
-                            name="description"
-                            value={formData.description}
-                            onChange={handleChange}
-                            rows="3"
-                            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                            required
-                        ></textarea>
-                    </div>
-                    
-                    <div className="mb-4">
-                        <label htmlFor="examType" className="block text-gray-700 text-sm font-bold mb-2">
-                            Exam Type *
-                        </label>
-                        <select
-                            id="examType"
-                            name="examType"
-                            value={formData.examType}
-                            onChange={handleChange}
-                            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                            required
-                        >
-                            <option value="mcq">Multiple Choice</option>
-                            <option value="written">Written</option>
-                        </select>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                        <div>
-                            <label htmlFor="duration" className="block text-gray-700 text-sm font-bold mb-2">
-                                Duration (minutes) *
-                            </label>
-                            <input
-                                type="number"
-                                id="duration"
-                                name="duration"
-                                value={formData.duration}
-                                onChange={handleChange}
-                                min="5"
-                                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                                required
-                            />
-                        </div>
-                        
-                        <div>
-                            <label htmlFor="startTime" className="block text-gray-700 text-sm font-bold mb-2">
-                                Start Time *
-                            </label>
-                            <input
-                                type="datetime-local"
-                                id="startTime"
-                                name="startTime"
-                                value={formatDateTime(formData.startTime)}
-                                onChange={handleChange}
-                                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                                required
-                            />
-                        </div>
-                        
-                        <div>
-                            <label htmlFor="endTime" className="block text-gray-700 text-sm font-bold mb-2">
-                                End Time *
-                            </label>
-                            <input
-                                type="datetime-local"
-                                id="endTime"
-                                name="endTime"
-                                value={formatDateTime(formData.endTime)}
-                                onChange={handleChange}
-                                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                                required
-                            />
-                        </div>
-                    </div>
-                    
-                    <div className="mb-4">
-                        <label className="flex items-center">
-                            <input
-                                type="checkbox"
-                                name="isActive"
-                                checked={formData.isActive}
-                                onChange={handleChange}
-                                className="mr-2"
-                            />
-                            <span className="text-gray-700 text-sm font-bold">Make exam active immediately</span>
-                        </label>
-                    </div>
-                    
-                    <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                        <h2 className="text-lg font-semibold text-gray-800 mb-2">Questions</h2>
-                        <p className="text-sm text-gray-600">
-                            You can add questions after creating the exam.
-                        </p>
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                        <button
-                            type="button"
+        <div className="min-h-screen bg-gray-50">
+            {/* Header with gradient */}
+            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 pb-24">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+                    <div className="flex items-center">
+                        <button 
                             onClick={() => navigate('/teacher-dashboard')}
-                            className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+                            className="mr-4 bg-white/10 hover:bg-white/20 rounded-full p-2 text-white transition-colors"
                         >
-                            Cancel
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
+                            </svg>
                         </button>
-                        <button
-                            type="submit"
-                            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-                            disabled={loading}
-                        >
-                            {loading ? 'Creating...' : 'Create Exam'}
-                        </button>
+                        <h1 className="text-2xl font-bold text-white">Create New Exam</h1>
                     </div>
-                </form>
+                </div>
+            </div>
+            
+            {/* Main content - shifted up to overlap with header */}
+            <div className="-mt-20 max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
+                <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+                    {error && (
+                        <div className="bg-red-50 border-l-4 border-red-500 p-4">
+                            <div className="flex">
+                                <div className="flex-shrink-0">
+                                    <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                                    </svg>
+                                </div>
+                                <div className="ml-3">
+                                    <p className="text-sm text-red-700">{error}</p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    
+                    <form onSubmit={handleSubmit} className="p-8">
+                        <div className="space-y-6">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700" htmlFor="title">
+                                    Exam Title *
+                                </label>
+                                <input
+                                    type="text"
+                                    id="title"
+                                    name="title"
+                                    value={formData.title}
+                                    onChange={handleChange}
+                                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                    required
+                                />
+                            </div>
+                            
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700" htmlFor="description">
+                                    Description *
+                                </label>
+                                <textarea
+                                    id="description"
+                                    name="description"
+                                    value={formData.description}
+                                    onChange={handleChange}
+                                    rows="3"
+                                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                    required
+                                />
+                            </div>
+                            
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700" htmlFor="examType">
+                                    Exam Type *
+                                </label>
+                                <select
+                                    id="examType"
+                                    name="examType"
+                                    value={formData.examType}
+                                    onChange={handleChange}
+                                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                    required
+                                >
+                                    <option value="mcq">Multiple Choice</option>
+                                    <option value="written">Written</option>
+                                </select>
+                            </div>
+                            
+                            <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-3">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700" htmlFor="duration">
+                                        Duration (minutes) *
+                                    </label>
+                                    <input
+                                        type="number"
+                                        id="duration"
+                                        name="duration"
+                                        value={formData.duration}
+                                        onChange={handleChange}
+                                        min="5"
+                                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                        required
+                                    />
+                                </div>
+                                
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700" htmlFor="startTime">
+                                        Start Time *
+                                    </label>
+                                    <input
+                                        type="datetime-local"
+                                        id="startTime"
+                                        name="startTime"
+                                        value={formatDateTime(formData.startTime)}
+                                        onChange={handleChange}
+                                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                        required
+                                    />
+                                </div>
+                                
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700" htmlFor="endTime">
+                                        End Time *
+                                    </label>
+                                    <input
+                                        type="datetime-local"
+                                        id="endTime"
+                                        name="endTime"
+                                        value={formatDateTime(formData.endTime)}
+                                        onChange={handleChange}
+                                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                        required
+                                    />
+                                </div>
+                            </div>
+                            
+                            <div className="relative flex items-start">
+                                <div className="flex items-center h-5">
+                                    <input
+                                        id="isActive"
+                                        name="isActive"
+                                        type="checkbox"
+                                        checked={formData.isActive}
+                                        onChange={handleChange}
+                                        className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded"
+                                    />
+                                </div>
+                                <div className="ml-3 text-sm">
+                                    <label htmlFor="isActive" className="font-medium text-gray-700">Make exam active immediately</label>
+                                    <p className="text-gray-500">Students will be able to see and take this exam once it's within the time window.</p>
+                                </div>
+                            </div>
+                            
+                            <div className="bg-gray-50 p-4 rounded-md border border-gray-200">
+                                <div className="flex items-center">
+                                    <div className="flex-shrink-0">
+                                        <svg className="h-5 w-5 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                    </div>
+                                    <div className="ml-3">
+                                        <h3 className="text-sm font-medium text-gray-800">Questions</h3>
+                                        <p className="text-xs text-gray-500 mt-1">
+                                            You'll be able to add questions after creating the exam.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div className="mt-8 flex justify-end space-x-3">
+                            <button
+                                type="button"
+                                onClick={() => navigate('/teacher-dashboard')}
+                                className="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                                disabled={loading}
+                            >
+                                {loading ? (
+                                    <>
+                                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                        Creating...
+                                    </>
+                                ) : 'Create Exam'}
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     );

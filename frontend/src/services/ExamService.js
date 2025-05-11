@@ -84,7 +84,7 @@ const ExamService = {
     updateExamQuestions: async (examId, questions) => {
         try {
             console.log(`Updating questions for exam ${examId}`);
-            console.log('Questions to be sent:', questions);
+            console.log('Questions to be sent:', JSON.stringify(questions, null, 2));
             
             // Check if token exists before making the request
             const token = localStorage.getItem('token');
@@ -92,6 +92,31 @@ const ExamService = {
                 console.error('No authentication token found');
                 throw new Error('Authentication required. Please log in again.');
             }
+            
+            // Validate question format before sending
+            questions.forEach((q, i) => {
+                if (!q.text) {
+                    throw new Error(`Question ${i+1} is missing text`);
+                }
+                
+                if (q.type === 'multiple-choice') {
+                    if (!q.options || !Array.isArray(q.options) || q.options.length === 0) {
+                        throw new Error(`Question ${i+1} is missing options array`);
+                    }
+                    
+                    // Check that all options have text
+                    q.options.forEach((opt, j) => {
+                        if (!opt.text || opt.text.trim() === '') {
+                            throw new Error(`Option ${j+1} in question ${i+1} is missing text`);
+                        }
+                    });
+                    
+                    // Check that at least one option is correct
+                    if (!q.options.some(opt => opt.isCorrect)) {
+                        throw new Error(`Question ${i+1} must have at least one correct answer`);
+                    }
+                }
+            });
             
             // Make the API request
             const response = await api.put(`/api/exams/${examId}/questions`, { questions });
@@ -104,6 +129,7 @@ const ExamService = {
             if (error.response && error.response.data) {
                 error.message = error.response.data.message || error.message;
                 error.details = error.response.data.errors || error.response.data.error;
+                console.error('Server error details:', error.details);
             }
             
             throw error;
@@ -184,10 +210,28 @@ const ExamService = {
                 throw new Error('Authentication required. Please log in again.');
             }
             
-            const response = await api.post(`/api/exams/${examId}/submit`, answerData);
+            // Log the data being sent
+            console.log(`Submitting exam ${examId} with data:`, answerData);
+            
+            // Make the API request with explicit headers
+            const response = await api.post(`/api/exams/${examId}/submit`, answerData, {
+                headers: { 
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            console.log('Submission response:', response.data);
             return response.data;
         } catch (error) {
             console.error(`Error submitting exam ${examId}:`, error);
+            
+            // Log more details about the error
+            if (error.response) {
+                console.log('Response data:', error.response.data);
+                console.log('Response status:', error.response.status);
+            }
+            
             throw error;
         }
     },

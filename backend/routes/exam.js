@@ -3,10 +3,10 @@ const router = express.Router();
 const examController = require('../controllers/examController');
 const auth = require('../middleware/auth');
 
-// Get public exams (no auth required)
+
 router.get('/public', examController.getPublicExams);
 
-// Individual routes with auth middleware
+
 router.post('/', auth, examController.createExam);
 router.get('/teacher', auth, examController.getTeacherExams);
 router.get('/active', auth, examController.getActiveExams);

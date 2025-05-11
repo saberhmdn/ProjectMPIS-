@@ -98,12 +98,24 @@ const TakeExam = () => {
             setLoading(true);
             setSubmitted(true);
             
-            const formattedAnswers = Object.keys(answers).map(index => ({
-                questionId: exam.questions[index]._id,
-                answer: answers[index]
-            }));
+            // Format the answers with the required structure
+            const formattedAnswers = Object.keys(answers).map(index => {
+                const question = exam.questions[index];
+                return {
+                    questionId: question._id,
+                    selectedAnswer: question.type === 'multiple-choice' ? answers[index] : undefined,
+                    writtenAnswer: question.type !== 'multiple-choice' ? answers[index] : undefined
+                };
+            });
+
+            // Include the student ID explicitly in the payload
+            const payload = {
+                answers: formattedAnswers
+            };
+
+            console.log('Submitting with payload:', payload);
             
-            await ExamService.submitExam(examId, { answers: formattedAnswers });
+            await ExamService.submitExam(examId, payload);
             
             navigate('/student-dashboard', { state: { message: 'Exam submitted successfully!' } });
         } catch (err) {
@@ -470,6 +482,8 @@ const TakeExam = () => {
 };
 
 export default TakeExam;
+
+
 
 
 
